@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 // Supabase
-export const SUPABASE_URL = "https://rhrkcfalfahlshvlllwd.supabase.co";
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJocmtjZmFsZmFobHNodmxsbHdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjMxNjEsImV4cCI6MjA4ODc5OTE2MX0.2bVyuZeBdX8ke6GKSXziHG75PgSS-gyxkxCw-lm7oz4";
+export const SUPABASE_URL = "sb_publishable_0gO6h_E1-CrAZFVJhXGlEQ_kk2j3mtR";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzYWZpaXJwcXdla2JodWNseWJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Nzg0NzIsImV4cCI6MjA5MzQ1NDQ3Mn0.gO3kTzk5z-KfsqPtbRryDs4kypEiyDLMg5Jgq9E6u-s";
 
 // ── Business Profile ─────────────────────────────────────────
 export const BIZ = {

@@ -405,7 +405,16 @@ async function initAdminProvision() {
     const { data, error } = await sb.auth.signUp({ email, password: pw });
     if (error) throw new Error(error.message);
     if (data.user) {
-      await sb.from("profiles").insert({ id: data.user.id, email, full_name: "Admin", role: "admin", kyc_status: "approved" });
+      const { error: profileError } = await sb
+        .from("profiles")
+        .insert([{
+          id: data.user.id,
+          email,
+          full_name: "Admin",
+          role: "admin",
+          kyc_status: "approved"
+        }]);
+      if (profileError) throw profileError;
     }
     UI.toast("Admin created! DELETE this file from GitHub now.", "success", 10000);
     setTimeout(() => { window.location.href = "login.html"; }, 2500);

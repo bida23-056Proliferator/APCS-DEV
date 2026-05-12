@@ -18,13 +18,14 @@ export const Auth = {
       options: { data: { full_name: name, phone, institution, program, year_of_study: +yearOfStudy, student_id_no: studentIdNo, role: "user" } }
     });
     if (error) throw new Error(error.message);
+    // Trigger on_auth_user_created handles profile creation automatically.
+    // Upsert here as a safety net in case trigger hasn't fired yet.
     if (data.user) {
-      const { error: profileError } = await sb.from("profiles").insert([{
+      await sb.from("profiles").upsert({
         id: data.user.id, email, full_name: name, phone,
         institution, program, year_of_study: +yearOfStudy,
         student_id_no: studentIdNo, role: "user", kyc_status: "not_started"
-      }]);
-      if (profileError) throw new Error(profileError.message);
+      }, { onConflict: "id", ignoreDuplicates: true });
     }
     return data;
   },

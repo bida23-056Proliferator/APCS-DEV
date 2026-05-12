@@ -19,11 +19,12 @@ export const Auth = {
     });
     if (error) throw new Error(error.message);
     if (data.user) {
-      await sb.from("profiles").insert({
+      const { error: profileError } = await sb.from("profiles").insert([{
         id: data.user.id, email, full_name: name, phone,
         institution, program, year_of_study: +yearOfStudy,
         student_id_no: studentIdNo, role: "user", kyc_status: "not_started"
-      });
+      }]);
+      if (profileError) throw new Error(profileError.message);
     }
     return data;
   },
@@ -71,12 +72,12 @@ export const Auth = {
 export const Loans = {
   async submit({ userId, packageId, packageLabel, principal, interest, total, repaymentDays, purpose, phone }) {
     const due = new Date(); due.setDate(due.getDate() + repaymentDays);
-    const { data, error } = await sb.from("loans").insert({
+    const { data, error } = await sb.from("loans").insert([{
       user_id: userId, package_id: packageId, package_label: packageLabel,
       principal: +principal, interest: +interest, total_repayable: +total,
       repayment_days: repaymentDays, due_date: due.toISOString().split("T")[0],
       purpose, contact_phone: phone, status: "pending"
-    }).select().single();
+    }]).select().single();
     if (error) throw new Error(error.message);
     return data;
   },
@@ -122,13 +123,23 @@ export const KYC = {
   async submit(uid, frontFile, backFile) {
     const ts = Date.now();
     const upload = async (file, side) => {
-      const path = `kyc/${uid}/${side}_${ts}${file.name.match(/\.[^.]+$/) || ".jpg"}`;
-      const { error } = await sb.storage.from("kyc-docs").upload(path, file, { upsert: true });
+      const ext = file.name.match(/\.[^.]+$/)?.[0] || ".jpg";
+      const path = `kyc/${uid}/${side}_${ts}${ext}`;
+      const { error } = await sb.storage.from("kyc-docs").upload(path, file, {
+        upsert: true,
+        contentType: file.type || "image/jpeg"
+      });
       if (error) throw new Error(`Upload ${side} failed: ${error.message}`);
       return sb.storage.from("kyc-docs").getPublicUrl(path).data.publicUrl;
     };
     const [frontUrl, backUrl] = await Promise.all([upload(frontFile, "front"), upload(backFile, "back")]);
-    await sb.from("profiles").update({ kyc_status: "pending", kyc_front_url: frontUrl, kyc_back_url: backUrl, kyc_submitted_at: new Date().toISOString() }).eq("id", uid);
+    const { error: updateError } = await sb.from("profiles").update({
+      kyc_status: "pending",
+      kyc_front_url: frontUrl,
+      kyc_back_url: backUrl,
+      kyc_submitted_at: new Date().toISOString()
+    }).eq("id", uid);
+    if (updateError) throw new Error(updateError.message);
     return { frontUrl, backUrl };
   },
 
@@ -145,11 +156,11 @@ export const KYC = {
 
 // ── ADS ───────────────────────────────────────────────────────
 export const Ads = {
-  async active()    { const { data } = await sb.from("ads").select("*").eq("active", true).order("sort_order"); return data || []; },
-  async all()       { const { data } = await sb.from("ads").select("*").order("created_at", { ascending: false }); return data || []; },
-  async create(ad)  { const { error } = await sb.from("ads").insert(ad); if (error) throw new Error(error.message); },
+  async active()     { const { data } = await sb.from("ads").select("*").eq("active", true).order("sort_order"); return data || []; },
+  async all()        { const { data } = await sb.from("ads").select("*").order("created_at", { ascending: false }); return data || []; },
+  async create(ad)   { const { error } = await sb.from("ads").insert([ad]); if (error) throw new Error(error.message); },
   async update(id, d){ const { error } = await sb.from("ads").update(d).eq("id", id); if (error) throw new Error(error.message); },
-  async remove(id)  { const { error } = await sb.from("ads").delete().eq("id", id); if (error) throw new Error(error.message); },
+  async remove(id)   { const { error } = await sb.from("ads").delete().eq("id", id); if (error) throw new Error(error.message); },
 };
 
 // ── ADMIN ─────────────────────────────────────────────────────
@@ -160,7 +171,7 @@ export const Admin = {
 
   async log(event, meta = {}) {
     const user = await Auth.user().catch(() => null);
-    await sb.from("audit_log").insert({ user_id: user?.id || null, event, meta }).catch(() => {});
+    await sb.from("audit_log").insert([{ user_id: user?.id || null, event, meta }]).catch(() => {});
   },
 
   async getSettings() {
@@ -170,6 +181,6 @@ export const Admin = {
   async saveSettings(s) {
     const existing = await this.getSettings();
     if (existing) { await sb.from("settings").update(s).eq("id", existing.id); }
-    else           { await sb.from("settings").insert(s); }
+    else           { await sb.from("settings").insert([s]); }
   }
 };
